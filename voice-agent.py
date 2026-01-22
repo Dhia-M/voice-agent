@@ -6,7 +6,6 @@ import wave
 import io
 import webrtcvad
 import time
-from piper.voice import PiperVoice
 from vosk import Model, KaldiRecognizer
 import json
 import pyttsx3
@@ -25,10 +24,6 @@ class LMVoiceAgent:
             api_key="not-needed"
         )
         self.model_name = "yi-coder-9b-chat"
-        
-        # TTS - Piper (loaded but will use fallback)
-        print("Loading Piper TTS...")
-        self.tts = PiperVoice.load(r"C:\voice_models\en_US-amy-low.onnx")
         
         # VAD - WebRTC
         self.vad = webrtcvad.Vad(3)
@@ -132,7 +127,7 @@ class LMVoiceAgent:
             return "Sorry, I couldn't process that."
     
     def speak(self, text):
-        """Speak text using pyttsx3 (REINITIALIZED EVERY TIME - FIXES MULTI-MESSAGE ISSUE)"""
+        """Speak text using pyttsx3 with Microsoft Zira voice"""
         if not text:
             print("⚠️ No text to speak")
             return
@@ -141,18 +136,28 @@ class LMVoiceAgent:
         print("[🔊 Speaking...]")
         
         try:
-            # Create a FRESH engine instance for each speech call
-            # This prevents the engine from getting stuck
             engine = pyttsx3.init()
             engine.setProperty('rate', 150)
             engine.setProperty('volume', 0.9)
             
+            # Set Microsoft Zira voice explicitly
+            zira_voice_id = r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0"
+            
+            # Verify voice exists (optional - remove after confirming it works)
+            voices = engine.getProperty('voices')
+            voice_found = False
+            for voice in voices:
+                if voice.id == zira_voice_id:
+                    engine.setProperty('voice', zira_voice_id)
+                    voice_found = True
+                    break
+            
+            if not voice_found:
+                print("⚠️ Microsoft Zira voice not found, using default")
+            
             engine.say(text)
             engine.runAndWait()
-            
-            # Clean up
             engine.stop()
-            
             print("✓ Spoke successfully")
             
         except Exception as e:
